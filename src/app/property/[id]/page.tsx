@@ -12,7 +12,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
   const { id } = await params;
   const cookieStore = await cookies();
 
-  // 1. Modern Supabase Server Client (No more Auth-Helpers error!)
+  // 1. Modern Supabase Server Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -39,14 +39,18 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
 
   if (!property) return notFound();
 
-  // 3. Security Check: Compare user ID to property owner ID
+  // 3. Security Check
   const isOwner = user && user.id === property.user_id;
 
-  const galleryImages = property.gallery && property.gallery.length > 0 
+  // 4. Clean up Gallery logic for TypeScript
+  const rawGallery = property.gallery && property.gallery.length > 0 
     ? property.gallery 
     : [property.image];
     
-  const slides = galleryImages.map((url: string) => ({ src: url }));
+  // This filter ensures NO null values reach the map function
+  const slides = rawGallery
+    .filter((url): url is string => typeof url === 'string' && url !== null)
+    .map((url) => ({ src: url }));
 
   return (
     <main className="bg-white min-h-screen">
@@ -111,6 +115,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
                   <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Beds</span>
                 </div>
                 <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center group hover:bg-blue-50 transition-colors">
+                  <支配人 className="mx-auto mb-2 text-blue-600" size={24} />
                   <Bath className="mx-auto mb-2 text-blue-600" size={24} />
                   <span className="block font-bold text-2xl text-slate-900">{property.baths}</span>
                   <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Baths</span>
@@ -127,7 +132,6 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
                   Contact Agent
                 </button>
                 
-                {/* 4. ONLY SHOW DELETE IF OWNER */}
                 {isOwner && (
                   <DeletePropertyButton id={id} /> 
                 )}
