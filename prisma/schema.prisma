@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Property {
+  id          BigInt   @id @default(autoincrement())
+  title       String
+  description String?
+  price       Float
+  location    String
+  beds        Int      @default(0)
+  baths       Int      @default(0)
+  sqft        Int      @default(0)
+  // Simplified: No brackets [], just a question mark ?
+  image       String?  
+  category    String   @default("Sale")
+  createdAt   DateTime @default(now())
+  user_id     String?  @default(dbgenerated("auth.uid()")) @db.Uuid
+}
