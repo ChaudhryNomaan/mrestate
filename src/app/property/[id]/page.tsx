@@ -12,7 +12,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
   const { id } = await params;
   const cookieStore = await cookies();
 
-  // 1. Modern Supabase Server Client
+  // 1. Supabase Server Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,7 +25,6 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
     }
   );
 
-  // 2. Get the current user
   const { data: { user } } = await supabase.auth.getUser();
 
   let property;
@@ -39,15 +38,13 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
 
   if (!property) return notFound();
 
-  // 3. Security Check
   const isOwner = user && user.id === property.user_id;
 
-  // 4. Clean up Gallery logic for TypeScript
+  // 2. Clean Gallery Logic
   const rawGallery = property.gallery && property.gallery.length > 0 
     ? property.gallery 
     : [property.image];
     
-  // This filter ensures NO null values reach the map function
   const slides = rawGallery
     .filter((url): url is string => typeof url === 'string' && url !== null)
     .map((url) => ({ src: url }));
@@ -82,7 +79,6 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
                 <span className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-xs font-bold uppercase tracking-widest">
                   For {property.category}
                 </span>
-                <span className="text-slate-400 text-sm font-medium">Added recently</span>
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight">
@@ -109,18 +105,17 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
               </div>
 
               <div className="grid grid-cols-3 gap-4 pt-4">
-                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center group hover:bg-blue-50 transition-colors">
+                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center">
                   <Bed className="mx-auto mb-2 text-blue-600" size={24} />
                   <span className="block font-bold text-2xl text-slate-900">{property.beds}</span>
                   <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Beds</span>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center group hover:bg-blue-50 transition-colors">
-                  <支配人 className="mx-auto mb-2 text-blue-600" size={24} />
+                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center">
                   <Bath className="mx-auto mb-2 text-blue-600" size={24} />
                   <span className="block font-bold text-2xl text-slate-900">{property.baths}</span>
                   <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Baths</span>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center group hover:bg-blue-50 transition-colors">
+                <div className="bg-slate-50 p-6 rounded-[2.5rem] text-center">
                   <Maximize className="mx-auto mb-2 text-blue-600" size={24} />
                   <span className="block font-bold text-2xl text-slate-900">{property.sqft}</span>
                   <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Sq Ft</span>
@@ -131,10 +126,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
                 <button className="w-full bg-slate-900 text-white py-6 rounded-[2rem] text-xl font-bold hover:bg-blue-700 transition-all shadow-xl active:scale-95">
                   Contact Agent
                 </button>
-                
-                {isOwner && (
-                  <DeletePropertyButton id={id} /> 
-                )}
+                {isOwner && <DeletePropertyButton id={id} />}
               </div>
             </div>
           </div>
