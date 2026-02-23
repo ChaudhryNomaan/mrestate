@@ -11,14 +11,14 @@ model Property {
   id          BigInt   @id @default(autoincrement())
   title       String
   description String?
-  price       Float
+  price       Int
   location    String
-  beds        Int      @default(0)
-  baths       Int      @default(0)
-  sqft        Int      @default(0)
-  // Simplified: No brackets [], just a question mark ?
+  beds        Int
+  baths       Int
+  sqft        Int
+  category    String   // <--- MAKE SURE THIS IS HERE
   image       String?  
-  category    String   @default("Sale")
+  gallery     String[] // <--- THIS IS THE NEW ONE
+  user_id     String   // <--- MAKE SURE THIS IS HERE
   createdAt   DateTime @default(now())
-  user_id     String?  @default(dbgenerated("auth.uid()")) @db.Uuid
 }

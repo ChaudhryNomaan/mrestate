@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import Navbar from "@/components/layout/Navbar";
 import Link from 'next/link';
+import DeleteModal from "@/components/ui/DeleteModal"; 
+import { deleteProperty } from "@/app/actions/delete-property";
+import toast from "react-hot-toast"; // 1. Added this import
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,6 +16,10 @@ const supabase = createClient(
 export default function Dashboard() {
   const [myProperties, setMyProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchUserListings();
@@ -20,31 +27,41 @@ export default function Dashboard() {
 
   async function fetchUserListings() {
     const { data: { user } } = await supabase.auth.getUser();
-    
     if (!user) {
       window.location.href = "/login";
       return;
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('Property')
       .select('*')
-      .eq('user_id', user.id); // Security: Only show my own posts
+      .eq('user_id', user.id);
 
     if (data) setMyProperties(data);
     setLoading(false);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this listing?")) return;
+  function openDeleteConfirm(id: string) {
+    setPropertyToDelete(id);
+    setIsModalOpen(true);
+  }
 
-    const { error } = await supabase
-      .from('Property')
-      .delete()
-      .eq('id', id); // Row Level Security ensures only owner can delete
-
-    if (error) alert("Error deleting: " + error.message);
-    else fetchUserListings();
+  async function handleConfirmDelete() {
+    if (!propertyToDelete) return;
+    
+    setDeleteLoading(true);
+    const result = await deleteProperty(propertyToDelete);
+    
+    if (result.success) {
+      setIsModalOpen(false);
+      setPropertyToDelete(null);
+      toast.success("Listing removed successfully"); // 2. Modern success message
+      fetchUserListings(); 
+    } else {
+      // 3. Replaced the old alert with a luxury toast
+      toast.error("Could not delete listing. Please try again.");
+    }
+    setDeleteLoading(false);
   }
 
   return (
@@ -62,33 +79,32 @@ export default function Dashboard() {
         </div>
         
         {loading ? (
-          <div className="text-center py-20">Loading your properties...</div>
+          <div className="text-center py-20 text-slate-400 font-medium">Loading your properties...</div>
         ) : (
           <div className="grid gap-4">
             {myProperties.map((p) => (
-              <div key={p.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-md transition">
+              <div key={p.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-md transition animate-in fade-in slide-in-from-bottom-2">
                 <div className="flex items-center gap-6 w-full">
-                  <img src={p.image} className="w-24 h-24 rounded-2xl object-cover" alt="" />
+                  <img src={p.image} className="w-24 h-24 rounded-2xl object-cover shadow-sm" alt="" />
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">{p.title}</h3>
-                    <p className="text-blue-600 font-semibold">${p.price.toLocaleString()}</p>
-                    <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase font-bold tracking-wider">
+                    <p className="text-blue-600 font-bold">${p.price.toLocaleString()}</p>
+                    <span className="text-[10px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase font-bold tracking-widest mt-1 inline-block">
                       {p.category}
                     </span>
                   </div>
                 </div>
                 
                 <div className="flex gap-3 w-full md:w-auto">
-                  {/* UPDATED: Link to the dynamic edit page */}
                   <Link 
                     href={`/edit-property/${p.id}`}
-                    className="flex-1 md:flex-none px-6 py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition text-center"
+                    className="flex-1 md:flex-none px-8 py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition text-center border border-slate-100"
                   >
                     Edit
                   </Link>
                   <button 
-                    onClick={() => handleDelete(p.id)}
-                    className="flex-1 md:flex-none px-6 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition"
+                    onClick={() => openDeleteConfirm(p.id.toString())}
+                    className="flex-1 md:flex-none px-8 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition border border-red-50"
                   >
                     Delete
                   </button>
@@ -104,6 +120,13 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <DeleteModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
+      />
     </main>
   );
 }
