@@ -48,8 +48,7 @@ export default function LoginPage() {
                     brandAccent: '#1d4ed8',
                   },
                   radii: {
-                    buttonRadius: '1rem',
-                    inputRadius: '1rem',
+borderRadiusButton: '1rem', // Changed from buttonRadius                    inputRadius: '1rem',
                   }
                 }
               }
